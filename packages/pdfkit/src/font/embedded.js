@@ -1,14 +1,14 @@
 import PDFObject from '../object';
 
-const toHex = function(...codePoints) {
-  const codes = Array.from(codePoints).map(code =>
+const toHex = function (...codePoints) {
+  const codes = Array.from(codePoints).map((code) =>
     `0000${code.toString(16)}`.slice(-4)
   );
 
   return codes.join('');
 };
 
-const createEmbeddedFont = PDFFont =>
+const createEmbeddedFont = (PDFFont) =>
   class EmbeddedFont extends PDFFont {
     constructor(document, font, id) {
       super();
@@ -177,7 +177,7 @@ const createEmbeddedFont = PDFFont =>
 
       // generate a random tag (6 uppercase letters. 65 is the char code for 'A')
       const tag = [0, 1, 2, 3, 4, 5]
-        .map(i => String.fromCharCode(Math.random() * 26 + 65))
+        .map((i) => String.fromCharCode(Math.random() * 26 + 65))
         .join('');
       const name = tag + '+' + this.font.postscriptName;
 
@@ -250,35 +250,37 @@ const createEmbeddedFont = PDFFont =>
             encoded.push(toHex(((value >>> 10) & 0x3ff) | 0xd800));
             value = 0xdc00 | (value & 0x3ff);
           }
-
           encoded.push(toHex(value));
-
           entries.push(`<${encoded.join(' ')}>`);
         }
       }
 
+      const bfcharEntries = entries
+        .map((entry, index) => `<${toHex(index)}> ${entry}`)
+        .join(' ');
+
       cmap.end(`\
-  /CIDInit /ProcSet findresource begin
-  12 dict begin
-  begincmap
-  /CIDSystemInfo <<
-  /Registry (Adobe)
-  /Ordering (UCS)
-  /Supplement 0
-  >> def
-  /CMapName /Adobe-Identity-UCS def
-  /CMapType 2 def
-  1 begincodespacerange
-  <0000><ffff>
-  endcodespacerange
-  1 beginbfrange
-  <0000> <${toHex(entries.length - 1)}> [${entries.join(' ')}]
-  endbfrange
-  endcmap
-  CMapName currentdict /CMap defineresource pop
-  end
-  end\
-  `);
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo <<
+/Registry (Adobe)
+/Ordering (UCS)
+/Supplement 0
+>> def
+/CMapName /Adobe-Identity-UCS def
+/CMapType 2 def
+1 begincodespacerange
+<0000><ffff>
+endcodespacerange
+${entries.length} beginbfchar
+${bfcharEntries}
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end\
+`);
 
       return cmap;
     }
